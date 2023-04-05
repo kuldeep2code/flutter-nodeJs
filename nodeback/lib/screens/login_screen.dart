@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:nodeback/apis/api_service.dart';
+import 'package:nodeback/models/user_model.dart';
+import 'package:nodeback/screens/landing_screen.dart';
 import 'package:nodeback/screens/register_screen.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -91,9 +93,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           radius: 25,
                           backgroundColor: const Color(0xff4c505b),
                           child: IconButton(
-                            onPressed: () {
+                            onPressed: () async {
                               print(email);
                               print(password);
+                              if (email != '' && password != '') {
+                                UserModel user =
+                                    UserModel(email: email, password: password);
+                                await ApiService.createUser(user);
+
+                                SharedPreferences prefs =
+                                    await SharedPreferences.getInstance();
+                                String? token = prefs.getString('token');
+                                if (token != null) {
+                                  Get.to(() => const LandingScreen());
+                                  prefs.clear();
+                                }
+                              }
                             },
                             color: Colors.white,
                             icon: const Icon(
@@ -143,25 +158,5 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
-  }
-}
-
-signIn(String email, String password) async {
-  final response = await http.post(
-    Uri.parse('https://127.0.0.1:4500'),
-    headers: <String, String>{
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: jsonEncode(<String, String>{
-      'email': email,
-      'password': password,
-    }),
-  );
-
-  if (response.statusCode == 201) {
-  } else {
-    // If the server did not return a 201 CREATED response,
-    // then throw an exception.
-    throw Exception('Failed to create album.');
   }
 }
